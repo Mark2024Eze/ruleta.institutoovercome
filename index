@@ -1,1 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ruleta de Preguntas</title>
+  <style>
+   
+body {
+  background: #f0f4f8;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+}
+
+#contenedor-ruleta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#titulo-ruleta {
+  font-size: 32px;
+  color: #1e293b;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+canvas {
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e0e7ff, #aabbff);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  margin-bottom: 25px;
+}
+
+#girar-btn {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 14px 40px;
+  border-radius: 25px;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 6px 15px rgba(59,130,246,0.4);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  user-select: none;
+}
+#girar-btn:hover {
+  background-color: #2563eb;
+  transform: scale(1.05);
+}
+
+
+
+
+
+
+
+
+
+#ventanaResultado {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 35px 50px;
+  border-radius: 30px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+  z-index: 1000;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  font-size: 20px;
+  color: #1e293b;
+}
+
+#btnVolver {
+  margin-top: 30px;
+  background-color: #22c55e;
+  border: none;
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  padding: 12px 35px;
+  border-radius: 25px;
+  cursor: pointer;
+  box-shadow: 0 6px 15px rgba(34,197,94,0.4);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+#btnVolver:hover {
+  background-color: #15803d;
+  transform: scale(1.05);
+
+
+}
+
+#titulo-ruleta {
+  font-size: 32px;
+  color: #0665ff;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: bold;
+}
+
+
+
+
+
+
+
+
+
+  </style>
+</head>
+<body>
+ <div id="contenedor-ruleta">
+  <h1 id="titulo-ruleta">Ruleta de Preguntas</h1>
+  <canvas id="ruleta"></canvas>
+  <button id="girar-btn">Girar</button>
+ </div>
+ <div id="pregunta-mostrada"></div>
+
+
+ <div id="ventanaResultado">
+  <h2 id="resultadoTexto"></h2>
+  <button id="btnVolver">Jugar de nuevo</button>
+ </div>
+
+ 
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const canvas = document.getElementById('ruleta');
+      const ctx = canvas.getContext('2d');
+      function ajustarTamanioCanvas() {
+      const anchoDisponible = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+     const lado = Math.min(anchoDisponible, 600); // máximo 600px
+     canvas.width = lado;
+     canvas.height = lado;
+        }
+        ajustarTamanioCanvas();
+
+        window.addEventListener('resize', () => {
+        ajustarTamanioCanvas();
+         dibujarRuleta();
+         dibujarFlechaFija();
+        });
+
+        
+
+      const btn = document.getElementById('girar-btn');
+      const resultado = document.getElementById('pregunta-mostrada');
+
+      
+      const preguntas = [
+        "Can you name 3 animals?",
+        "What color is the sky?",
+        "Say the days of the week!",
+        "What do you eat for breakfast?",
+        "Count from 1 to 10!",
+        "What’s your favorite color?",
+        "Can you spell your name?",
+        "What’s the weather like today?"
+      ];
+
+      const resultadoTexto = document.getElementById("resultadoTexto");
+      const ventana = document.getElementById("ventanaResultado");
+      const btnVolver = document.getElementById("btnVolver");
+
+      const colores = ["#f44336", "#4caf50", "#2196f3", "#ff9800", "#9c27b0", "#3f51b5", "#009688", "#ffc107"];
+      const numSegmentos = preguntas.length;
+      const angulo = 2 * Math.PI / numSegmentos;
+      let anguloActual = 0;
+      let girando = false;
+
+
+
+      function dibujarRuleta() {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+        const radio = canvas.width / 2;
+
+        for (let i = 0; i < numSegmentos; i++) {
+        const startAngle = angulo * i;
+        const endAngle = startAngle + angulo;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radio, startAngle, endAngle);
+        ctx.fillStyle = colores[i % colores.length];
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(startAngle + angulo / 2);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#fff";
+
+    const texto = preguntas[i];
+    let fontSize = 22;
+
+    if (texto.length > 45) {
+      fontSize = 14;
+    } else if (texto.length > 30) {
+      fontSize = 16;
+    } else if (texto.length > 20) {
+      fontSize = 18;
+    }
+
+    ctx.font = `bold ${fontSize}px sans-serif`;
+
+    const palabras = texto.split(" ");
+    let lineas = [];
+    let lineaActual = "";
+    const anchoMax = radio * 0.8; // se adapta al tamaño del canvas
+
+    for (let j = 0; j < palabras.length; j++) {
+      const palabra = palabras[j];
+      const lineaPrueba = lineaActual + palabra + " ";
+      const ancho = ctx.measureText(lineaPrueba).width;
+
+      if (ancho > anchoMax && lineaActual !== "") {
+        lineas.push(lineaActual.trim());
+        lineaActual = palabra + " ";
+      } else {
+        lineaActual = lineaPrueba;
+      }
+    }
+    lineas.push(lineaActual.trim());
+
+    if (lineas.length > 3) {
+      fontSize = 14;
+      ctx.font = `bold ${fontSize}px sans-serif`;
+    }
+
+    const espacioLinea = fontSize + 2;
+    const ajusteVertical = 10; // probá con este valor, ajustalo según veas
+
+const offsetY = -((lineas.length - 1) / 2) * espacioLinea + ajusteVertical;
+
+for (let k = 0; k < lineas.length; k++) {
+  ctx.fillText(lineas[k], radio * 0.6, offsetY + k * espacioLinea);
+}
+
+ctx.restore();
+
+    
+
+    
+  
+
+
+           
+           // Círculo central para que quede más lindo
+           // ctx.beginPath();
+            //ctx.arc(300, 300, 30, 0, 2 * Math.PI);
+            ///ctx.fillStyle = "#fff";  // blanco
+            //ctx.shadowColor = "rgba(0,0,0,0.2)";
+            //ctx.shadowBlur = 10;
+            //ctx.fill();
+              //  ctx.shadowBlur = 0; // reset sombra
+
+
+        }  
+      }
+
+        function dibujarFlechaFija() {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const radio = canvas.width / 2;
+
+        const puntaX = cx + radio * 0.95;
+        const y1 = cy - radio * 0.20;
+        const y2 = cy + radio * 0.20;
+
+        
+
+        ctx.beginPath();
+        ctx.moveTo(puntaX, cy);               // punta de la flecha
+        ctx.lineTo(puntaX + radio * 0.15, y1); // esquina superior
+        ctx.lineTo(puntaX + radio * 0.15, y2); // esquina inferior
+        ctx.closePath();
+        ctx.fillStyle = "#000";
+        ctx.fill();
+        }
+
+
+
+        function girarRuleta() {
+          if (girando) return;
+          girando = true;
+          const vueltas = Math.random() * 5 + 5; // entre 5 y 10 vueltas
+          const destinoFinal = vueltas * 2 * Math.PI;
+          const duracion = 4000;
+          const start = performance.now();
+
+
+
+          function animar(timestamp) {
+              const tiempo = timestamp - start;
+            const progreso = tiempo / duracion;
+            const easeOut = 1 - Math.pow(1 - progreso, 3);
+            anguloActual = destinoFinal * easeOut;
+
+          const cx = canvas.width / 2;
+          const cy = canvas.height / 2;
+
+
+          ctx.clearRect(0, 0,canvas.width, canvas.height);
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(anguloActual);
+          ctx.translate(-cx, -cy);
+          dibujarRuleta();
+          ctx.restore();
+
+          dibujarFlechaFija();
+          dibujarCentro();
+
+
+          if (progreso < 1) {
+            requestAnimationFrame(animar);
+          } else {
+            mostrarPregunta();
+            girando = false;
+          }
+        }
+
+        requestAnimationFrame(animar);
+      }
+
+     function mostrarPregunta() {
+     const gradosFinal = (anguloActual * 180 / Math.PI) % 360;
+     const index = Math.floor((numSegmentos - (gradosFinal / (360 / numSegmentos))) % numSegmentos);
+     const fraseSeleccionada = preguntas[index];
+
+     // Mostrar la pregunta debajo del canvas
+     resultado.innerText = fraseSeleccionada;
+
+     // Mostrar la ventana flotante
+     resultadoTexto.textContent = fraseSeleccionada;
+     ventana.style.display = "block";
+     
+    }
+
+      dibujarRuleta();
+      dibujarFlechaFija(); // inicial cuando se carga
+      dibujarCentro(); // ⬅️ nuevo
+
+
+          function dibujarCentro() {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const radio = canvas.width / 2;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, radio * 0.08, 0, 2 * Math.PI); // 8% del radio
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = Math.max(2, radio * 0.01); // línea proporcional
+        ctx.stroke();
+        }
+
+
+
+      btn.addEventListener('click', girarRuleta);
+
+
+       btnVolver.onclick = () => {
+       ventana.style.display = "none";
+    };
+
+    });
+  </script>
+</body>
+</html>
 
